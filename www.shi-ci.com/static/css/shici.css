@@ -1,0 +1,129 @@
+a.logo {
+  display: block;
+  width: 232px;
+  height: 68px;
+  background-image:url(/static/i/logo.png);
+  background-position: 0px 0px;
+}
+
+a.logo:hover {
+  background-position: 0px -68px;
+}
+
+#header {
+  margin: 20px 0 10px 0;
+}
+
+.nav {
+  width: 990px;
+  height: 102px;
+  padding: 0;
+  margin: 0 0 20px 0;
+  background: transparent url(/static/i/nav.png) no-repeat;
+}
+
+.nav .nav-inner {
+  margin: 24px 20px;
+  width: 950px;
+  height: 54px;
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 54px;
+  background-color: #fff;
+  background: transparent url(/static/i/bg.png) repeat;
+}
+
+.item {
+  width: 166px;
+  margin: 0 0 20px 0;
+  float: left;
+}
+
+.item:hover .item-header,
+.item:hover .item-footer {
+  background-image: url(/static/i/item-hover.png);
+}
+
+.item:hover .item-body {
+  background-image: url(/static/i/item-body-hover.png);
+}
+
+.item-header {
+  width: 166px;
+  height: 15px;
+  background-repeat: no-repeat;
+  background-image: url(/static/i/item.png);
+  background-position: 0px 0px;
+}
+
+.item-footer {
+  width: 166px;
+  height: 16px;
+  background-repeat: no-repeat;
+  background-image: url(/static/i/item.png);
+  background-position: 0px -15px;
+}
+
+.item-body {
+  width: 166px;
+  background-repeat: repeat-y;
+  background-image: url(/static/i/item-body.png);
+}
+
+.item-body p {
+  margin: 0 19px;
+  font-size: 16px;
+  line-height: 28px;
+}
+
+#footer {
+  width: 950px;
+  margin: 20px auto 20px auto;
+  background: transparent url(/static/i/footer.png) repeat-x;
+  padding: 32px 1px 0 1px;
+}
+
+#footer div {
+  width: 175px;
+  margin: 0;
+  float: left;
+  padding: 0;
+  background-position: center left;
+  background-repeat: no-repeat;
+}
+
+#footer div.icon {
+  width: 50px;
+  height: 50px;
+  margin-right: 0;
+  padding-left: 10px;
+}
+
+#footer div.icon a {
+  display: block;
+  width: 50px;
+  height: 50px;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+a.icon-stamp {
+  background-image: url(/static/i/stamp.png);
+}
+
+a.icon-iphone {
+  background-image: url(/static/i/stamp.png);
+}
+
+a.icon-weixin {
+  background-image: url(/static/i/stamp.png);
+}
+
+a.icon-weibo {
+  background-image: url(/static/i/stamp.png);
+}
+
+#footer div p {
+  line-height: 25px;
+  margin-left: 10px;
+}
