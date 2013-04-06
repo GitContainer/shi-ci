@@ -1,4 +1,76 @@
-a.logo {
+body {
+  background-image: url(/static/i/body-bg.png);
+  background-attachment: fixed;
+  background-position: top center;
+}
+
+div.go-top {
+  display: none;
+  opacity: 0.6;
+  z-index: 999999;
+  position: fixed;
+  bottom: 113px;
+  left: 90%;
+  margin-left: 40px;
+  border: 1px solid #a38a54;
+  width: 38px;
+  height: 38px;
+  background-color: #eddec2;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+div.go-top:hover {
+  opacity: 1.0;
+}
+
+div.go-top > div.arrow {
+  position: absolute;
+  left: 10px;
+  top: -1px;
+  width: 0;
+  height: 0;
+  border: 9px solid transparent;
+  border-bottom-color: #a38a54;
+}
+
+div.go-top > div.stick {
+  position: absolute;
+  left: 15px;
+  top: 15px;
+  width: 8px;
+  height: 14px;
+  display: block;
+  border-radius: 1px;
+  background-color: #a38a54;
+}
+
+#header {
+  margin: 20px 0 10px 0;
+}
+
+#header div {
+  float: left;
+}
+
+#header div.logo {
+  width: 260px;
+  margin-left: 60px;
+}
+
+#header div.date {
+  width: 240px;
+}
+
+#header div.signin {
+  width: 260px;
+}
+
+#header div.signed {
+  width: 300px;
+}
+
+#header div.logo a {
   display: block;
   width: 232px;
   height: 68px;
@@ -6,12 +78,33 @@ a.logo {
   background-position: 0px 0px;
 }
 
-a.logo:hover {
+#header div.logo a:hover {
   background-position: 0px -68px;
 }
 
-#header {
-  margin: 20px 0 10px 0;
+#header div.signin a.signin {
+  display: block;
+  width: 173px;
+  height: 32px;
+  background: transparent url(/static/i/signin.png) no-repeat;
+}
+
+#header div.signed a.profile {
+  display: block;
+  width: 50px;
+  height: 50px;
+  float: left;
+  border: 1px solid #333;
+}
+
+#header div.signed p {
+  display: block;
+  width: 200px;
+  height: 26px;
+  line-height: 26px;
+  margin-left: 10px;
+  float: left;
+  clear: right;
 }
 
 .nav {
@@ -37,6 +130,7 @@ a.logo:hover {
   width: 166px;
   margin: 0 0 20px 0;
   float: left;
+  background-color: #f0e1c4;
 }
 
 .item:hover .item-header,
@@ -78,7 +172,7 @@ a.logo:hover {
 
 #footer {
   width: 950px;
-  margin: 20px auto 20px auto;
+  margin: 20px auto 12px auto;
   background: transparent url(/static/i/footer.png) repeat-x;
   padding: 32px 1px 0 1px;
 }
@@ -112,18 +206,23 @@ a.icon-stamp {
 }
 
 a.icon-iphone {
-  background-image: url(/static/i/stamp.png);
+  background-image: url(/static/i/iphone.png);
 }
 
 a.icon-weixin {
-  background-image: url(/static/i/stamp.png);
+  background-image: url(/static/i/weixin.png);
 }
 
 a.icon-weibo {
-  background-image: url(/static/i/stamp.png);
+  background-image: url(/static/i/weibo.png);
 }
 
 #footer div p {
   line-height: 25px;
   margin-left: 10px;
+}
+
+a.bigbang:hover {
+  padding-left: 10px;
+  text-decoration: none;
 }
