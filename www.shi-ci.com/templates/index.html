@@ -1,0 +1,222 @@
+{% include 'templates/_header.html' %}
+    <div class="container">
+        <div class="row">
+            <div class="frame">
+                <div class="frame-inner">
+                    <div>
+                        <form id="search" name="search" action="#" method="get">
+                            在六万余首诗词中搜索：<input name="q" type="text" maxlength="15" class="search" placeholder="请输入关键词" /> <button class="btn">搜索</button>
+                        </form>
+                    </div>
+                    <div class="condition">朝代：<span class="selected" v="">所有</span>
+                {% for d in dynasties %}
+                        <span v="{{ d.id }}">{{ d.name }}</span>
+                {% endfor %}
+                    </div>
+                    <div class="condition">诗人：<span>所有</span> <span class="selected">李白</span></div>
+                    <div class="condition">格式：<span class="selected">不限</span> <span>五律</span> <span>五绝</span> <span>七律</span> <span>七绝</span> <span>词</span> <span>曲</span> <span>赋</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div id="poems" style="width:950px;margin:0 auto;padding:0;">
+                <div class="item">
+                    <div class="item-header"></div>
+                    <div class="item-body">
+                        <p>寄友人</p>
+                        <p><a href="#">姚合</a></p>
+                        <p>日暮掩重扉，</p>
+                        <p>抽簪复解衣。</p>
+                        <p>漏声林下静，</p>
+                        <p>萤色月中微。</p>
+                        <p>秋霁露华结，</p>
+                        <p>夜深人语稀。</p>
+                        <p>殷勤故山路，</p>
+                        <p>谁与我同归。</p>
+                    </div>
+                    <div class="item-footer"></div>
+                </div>
+                <div class="item">
+                    <div class="item-header"></div>
+                    <div class="item-body">
+                        <p>送别</p>
+                        <p><a href="#">王维</a></p>
+                        <p>山中相送罢，</p>
+                        <p>日暮掩柴扉。</p>
+                        <p>春草年年绿，</p>
+                        <p>王孙归不归。</p>
+                    </div>
+                    <div class="item-footer"></div>
+                </div>
+                <div class="item">
+                    <div class="item-header"></div>
+                    <div class="item-body">
+                        <p>芙蓉楼送辛渐</p>
+                        <p><a href="#">王昌龄</a></p>
+                        <p>寒雨连天夜入吴，</p>
+                        <p>平明送客楚山孤。</p>
+                        <p>洛阳亲友如相问，</p>
+                        <p>一片冰心在玉壶。</p>
+                    </div>
+                    <div class="item-footer"></div>
+                </div>
+                <div class="item">
+                    <div class="item-header"></div>
+                    <div class="item-body">
+                        <p>白雪歌送武判官归京</p>
+                        <p><a href="#">岑参</a></p>
+                        <p>北风卷地白草折，</p>
+                        <p>胡天八月即飞雪。</p>
+                        <p>忽如一夜春风来，</p>
+                        <p>千树万树梨花开。</p>
+                        <p>散入珠帘湿罗幕，</p>
+                        <p>狐裘不暖锦衾薄。</p>
+                        <p>将军角弓不得控，</p>
+                        <p>都护铁衣冷犹著。</p>
+                        <p>瀚海阑干百丈冰，</p>
+                        <p>愁云惨淡万里凝。</p>
+                        <p>中军置酒饮归客，</p>
+                        <p>胡琴琵琶与羌笛。</p>
+                        <p>纷纷暮雪下辕门，</p>
+                        <p>风掣红旗冻不翻。</p>
+                        <p>轮台东门送君去，</p>
+                        <p>去时雪满天山路。</p>
+                        <p>山回路转不见君，</p>
+                        <p>雪上空留马行处。</p>
+                    </div>
+                    <div class="item-footer"></div>
+                </div>
+                <div class="item">
+                    <div class="item-header"></div>
+                    <div class="item-body">
+                        <p>咏鹅</p>
+                        <p><a href="#">骆宾王</a></p>
+                        <p>鹅，鹅，鹅，</p>
+                        <p>曲项向天歌。</p>
+                        <p>白毛浮绿水，</p>
+                        <p>红掌拨清波。</p>
+                    </div>
+                    <div class="item-footer"></div>
+                </div>
+                <div class="item">
+                    <div class="item-header"></div>
+                    <div class="item-body">
+                        <p>清明</p>
+                        <p><a href="#">杜牧</a></p>
+                        <p>清明时节雨纷纷，</p>
+                        <p>路上行人欲断魂。</p>
+                        <p>借问酒家何处有，</p>
+                        <p>牧童遥指杏花村。</p>
+                    </div>
+                    <div class="item-footer"></div>
+                </div>
+                <div class="item">
+                    <div class="item-header"></div>
+                    <div class="item-body">
+                        <p>关雎</p>
+                        <p><a href="#">李白</a></p>
+                        <p>关关雎鸠，</p>
+                        <p>在河之洲。</p>
+                        <p>窈窕淑女，</p>
+                        <p>君子好逑。</p>
+                        <p>参差荇菜，</p>
+                        <p>左右流之。</p>
+                        <p>窈窕淑女，</p>
+                        <p>寤寐求之。</p>
+                        <p>求之不得，</p>
+                        <p>寤寐思服。</p>
+                        <p>悠哉悠哉，</p>
+                        <p>辗转反侧。</p>
+                        <p>参差荇菜，</p>
+                        <p>左右采之。</p>
+                        <p>窈窕淑女，</p>
+                        <p>琴瑟友之。</p>
+                        <p>参差荇菜，</p>
+                        <p>左右芼之。</p>
+                        <p>窈窕淑女，</p>
+                        <p>钟鼓乐之。</p>
+                    </div>
+                    <div class="item-footer"></div>
+                </div>
+                <div class="item">
+                    <div class="item-header"></div>
+                    <div class="item-body">
+                        <p>江城子</p>
+                        <p><a href="#">苏轼</a></p>
+                        <p>十年生死两茫茫。</p>
+                        <p>不思量，自难忘。</p>
+                        <p>千里孤坟，无处话凄凉。</p>
+                        <p>纵使相逢应不识，</p>
+                        <p>尘满面，鬓如霜。</p>
+                        <p>夜来幽梦忽还乡。</p>
+                        <p>小轩窗，正梳妆。</p>
+                        <p>相顾无言，惟有泪千行。</p>
+                        <p>料得年年断肠处，</p>
+                        <p>明月夜，短松冈。</p>
+                    </div>
+                    <div class="item-footer"></div>
+                </div>
+                <div class="item">
+                    <div class="item-header"></div>
+                    <div class="item-body">
+                        <p>赋得古原草送别</p>
+                        <p><a href="#">白居易</a></p>
+                        <p>离离原上草，</p>
+                        <p>一岁一枯荣。</p>
+                        <p>野火烧不尽，</p>
+                        <p>春风吹又生。</p>
+                        <p>远芳侵古道，</p>
+                        <p>晴翠接荒城。</p>
+                        <p>又送王孙去，</p>
+                        <p>萋萋满别情。</p>
+                    </div>
+                    <div class="item-footer"></div>
+                </div>
+                <div class="item">
+                    <div class="item-header"></div>
+                    <div class="item-body">
+                        <p>虞美人</p>
+                        <p><a href="#">李白</a></p>
+                        <p>雪花一尺江南北。</p>
+                        <p>薪尽炊无粟。</p>
+                        <p>老仙活国拭刀圭。</p>
+                        <p>十万人家生意、与春回。</p>
+                        <p>天公一笑酬阴德。</p>
+                        <p>赐与长生籍。</p>
+                        <p>今朝雪霁寿尊前。</p>
+                        <p>看我双亲都是、地行仙。</p>
+                    </div>
+                    <div class="item-footer"></div>
+                </div>
+                <div class="item">
+                    <div class="item-header"></div>
+                    <div class="item-body">
+                        <p>望岳</p>
+                        <p><a href="#">杜甫</a></p>
+                        <p>岱宗夫如何，</p>
+                        <p>齐鲁青未了。</p>
+                        <p>造化钟神秀，</p>
+                        <p>阴阳割昏晓。</p>
+                        <p>荡胸生层云，</p>
+                        <p>决眦入归鸟。</p>
+                        <p>会当凌绝顶，</p>
+                        <p>一览众山小。</p>
+                    </div>
+                    <div class="item-footer"></div>
+                </div>
+                <div class="item">
+                    <div class="item-header"></div>
+                    <div class="item-body">
+                        <p>出塞</p>
+                        <p><a href="#">王昌龄</a></p>
+                        <p>秦时明月汉时关，</p>
+                        <p>万里长征人未还。</p>
+                        <p>但使龙城飞将在，</p>
+                        <p>不教胡马度阴山。</p>
+                    </div>
+                    <div class="item-footer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% include 'templates/_footer.html' %}

@@ -1,0 +1,42 @@
+{% include 'templates/_header.html' %}
+
+<script type="text/javascript">
+$(function() {
+    $('.condition-dynasty span[v={{ dynasty.id }}]').addClass('selected');
+})
+</script>
+
+    <div class="container">
+        <div class="row">
+            <div class="frame">
+                <div class="frame-inner">
+                    <div>
+                        <form id="search" name="search" action="#" method="get">
+                            在六万余首诗词中搜索：<input name="q" type="text" maxlength="15" class="search" placeholder="请输入关键词" /> <button class="btn">搜索</button>
+                        </form>
+                    </div>
+                    <div class="condition condition-dynasty">朝代：<span v="">所有</span>
+                {% for d in dynasties %}
+                        <span v="{{ d.id }}">{{ d.name }}</span>
+                {% endfor %}
+                    </div>
+                    <div class="condition">格式：<span class="selected">不限</span> <span>五律</span> <span>五绝</span> <span>七律</span> <span>七绝</span> <span>词</span> <span>曲</span> <span>赋</span></div>
+                    <div class="line"></div>
+                    <div class="poets">
+                {% set alpha = '' %}
+                {% for p in poets %}
+                    {% if p.pinyin[0]!=alpha %}
+                        {% set alpha = p.pinyin[0] %}
+                        <div class="clearfix"></div>
+                        <div class="alpha-list">{{ alpha.upper() }}</div>
+                        <div class="line"></div>
+                    {% endif %}
+                        <a href="/poet/{{ p.id }}">{{ p.name }}</a>
+                {% endfor %}
+                        <div class="clearfix"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% include 'templates/_footer.html' %}

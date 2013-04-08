@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title|e }} - 中华诗词</title>
+    <!--[if lt IE 9]>
+        <script src="{{ static_prefix }}/static/js/html5.js"></script>
+    <![endif]-->
+    <link rel="stylesheet" href="{{ static_prefix }}/static/css/reset.css" />
+    <link rel="stylesheet" href="{{ static_prefix }}/static/css/shici.css" />
+    <script type="text/javascript" src="{{ static_prefix }}/static/js/jquery-1.9.0.min.js"></script>
+    <script type="text/javascript" src="{{ static_prefix }}/static/js/jquery.masonry.min.js"></script>
+    <script type="text/javascript" src="{{ static_prefix }}/static/js/shici.js"></script>
+</head>
+<body>
+    <div class="go-top">
+        <div class="arrow"></div>
+        <div class="stick"></div>
+    </div>
+    <div class="container">
+        <div class="row">
+            <div id="header">
+                <div class="logo"><a href="/"></a></div>
+                <div class="signin">
+                    <p><a href="" class="signin"></a></p>
+                </div>
+                <div class="signed">
+                    <a href="http://weibo.com/1658384301" target="_blank" class="profile" style="background-image:url(http://tp2.sinaimg.cn/1658384301/50/5644905735/1)"></a>
+                    <div>
+                        <p>欢迎您，<a href="">廖雪峰</a></p>
+                        <p><a href="">安全登出</a>　<a href="javascript:void(0);" class="bigbang">　</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row nav">
+            <div class="nav-inner">
+                <a href="/">中华诗词</a>
+            {% for d in dynasties %}
+                <a href="/dynasty/{{ d.id }}">{{ d.name }}</a>
+            {% endfor %}
+                <span class="date">农历二月廿四，清明</span>
+            </div>
+        </div>
+    </div>
+    <!--// header -->
