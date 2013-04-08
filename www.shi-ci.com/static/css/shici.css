@@ -46,28 +46,14 @@ div.go-top > div.stick {
 }
 
 #header {
-  margin: 20px 0 10px 0;
-}
-
-#header div {
-  float: left;
+  width: 950px;
+  margin: 30px auto 0 auto;
 }
 
 #header div.logo {
+  float: left;
   width: 260px;
-  margin-left: 60px;
-}
-
-#header div.date {
-  width: 240px;
-}
-
-#header div.signin {
-  width: 260px;
-}
-
-#header div.signed {
-  width: 300px;
+  margin: -10px 0 0 10px;
 }
 
 #header div.logo a {
@@ -82,11 +68,22 @@ div.go-top > div.stick {
   background-position: 0px -68px;
 }
 
+#header div.signin {
+  float: right;
+  width: 200px;
+}
+
 #header div.signin a.signin {
   display: block;
+  float: right;
   width: 173px;
   height: 32px;
   background: transparent url(/static/i/signin.png) no-repeat;
+}
+
+#header div.signed {
+  float: right;
+  width: 300px;
 }
 
 #header div.signed a.profile {
@@ -111,7 +108,7 @@ div.go-top > div.stick {
   width: 990px;
   height: 102px;
   padding: 0;
-  margin: 0 0 20px 0;
+  margin: 10px 0 20px 0;
   background: transparent url(/static/i/nav.png) no-repeat;
 }
 
@@ -120,10 +117,78 @@ div.go-top > div.stick {
   width: 950px;
   height: 54px;
   font-size: 18px;
-  font-weight: bold;
   line-height: 54px;
   background-color: #fff;
   background: transparent url(/static/i/bg.png) repeat;
+}
+
+.nav .nav-inner a {
+  display: block;
+  float: left;
+  margin-left: 16px;
+  font-weight: bold;
+}
+
+.nav .nav-inner span.date {
+  display: block;
+  width: 200px;
+  float: right;
+  font-size: 14px;
+  line-height: 28px;
+  text-align: right;
+  margin: 20px 20px 0 0;
+}
+
+div.frame {
+  width: 938px;
+  margin: 0 auto 20px auto;
+  padding: 3px;
+  border: 3px solid #82544c;
+  background-color: #f0e1c4;
+}
+
+div.frame .frame-inner {
+  width: 916px;
+  margin: 3px;
+  padding: 6px;
+  border: 2px solid #9e725c;
+}
+
+div.frame .frame-inner div.condition {
+  line-height: 20px;
+  margin: 4px 0;
+}
+
+div.condition span {
+  padding: 2px 6px;
+  color: #c30;
+  cursor: pointer;
+}
+
+div.condition span:hover {
+  text-decoration: underline;
+}
+
+div.condition span.selected {
+  background-color: #c30;
+  text-decoration: none;
+  color: #fff;
+}
+
+input.search {
+  padding-left: 28px;
+  background: #fff url(/static/i/search.png) no-repeat;
+  background-position: 6px center;
+}
+
+button.btn {
+  background-color: #f0e4d0;
+  border-color: #c3b290;
+}
+
+button.btn:hover {
+  background-color: #eddec2;
+  border-color: #a38a54;
 }
 
 .item {
@@ -166,6 +231,91 @@ div.go-top > div.stick {
 
 .item-body p {
   margin: 0 19px;
+  font-size: 16px;
+  line-height: 28px;
+}
+
+.item-body p:first-child {
+  font-weight: bold;
+}
+
+div.more {
+  width: 950px;
+  margin: 6px auto;
+  text-align: center;
+}
+
+#more {
+  width: 800px;
+}
+
+div.line {
+  clear: both;
+  margin: 2px 0px;
+  height: 0px;
+  border-top: 1px solid #cda966;
+  border-bottom: 1px solid #fef4d8;
+}
+
+div.poets div.alpha-list {
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 24px;
+  padding: 12px 0 0 6px;
+}
+
+div.poets a {
+  display: block;
+  float: left;
+  width: 80px;
+  font-size: 16px;
+  margin: 4px 0 10px 20px;
+}
+
+#poems {
+  width: 950px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+#poem {
+  width: 950px;
+  margin: 20px auto;
+  padding: 0;
+  background-color: #f0e1c4;
+}
+
+#poem .poem-header,
+#poem .poem-footer {
+  width: 950px;
+  background-repeat: no-repeat;
+  background-image: url(/static/i/item-big.png);
+}
+
+#poem .poem-body {
+  width: 850px;
+  padding: 0 50px;
+  background-repeat: repeat-y;
+  background-image: url(/static/i/item-body-big.png);
+}
+
+#poem .poem-header {
+  height: 15px;
+  background-position: 0px 0px;
+}
+
+#poem .poem-footer {
+  height: 16px;
+  background-position: 0px -15px;
+}
+
+#poem h3,
+#poem p {
+  font-size: 24px;
+  line-height: 42px;
+}
+
+#poem p.small {
   font-size: 16px;
   line-height: 28px;
 }
