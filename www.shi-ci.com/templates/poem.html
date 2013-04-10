@@ -2,6 +2,8 @@
 
 <script type="text/javascript">
 $(function() {
+    $('#poem .poem-body').append(format_poem($('#poem textarea').val(), false));
+    // more button:
     var normal_text = $('#more').text();
     $('#more').click(function() {
         var page = parseInt($('#more').attr('page'));
@@ -46,8 +48,8 @@ $(function() {
                 <div class="poem-header"></div>
                 <div class="poem-body">
                     <h3>{{ poem.name }}</h3>
-                    <p class="small">{{ dynasty.name }} - {{ poet.name }}</p>
-                    <p>{{ poem.content }}</p>
+                    <p class="small"><a href="/dynasty/{{ dynasty.id }}">{{ dynasty.name }}</a> - <a href="/poet/{{ poet.id }}">{{ poet.name }}</a></p>
+                    <textarea name="content" style="display:none">{{ poem.content }}</textarea>
                 </div>
                 <div class="poem-footer"></div>
             </div>
