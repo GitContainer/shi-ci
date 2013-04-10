@@ -1,3 +1,15 @@
+function format_poem(content, shortBreak) {
+    content = content.replace(/。/g, '。\n').replace(/！/g, '！\n').replace(/”/g, '”\n');
+    if (shortBreak) {
+        content = content.replace(/，/g, '，\n');
+    }
+    var ps = []
+    $.each(content.split('\n'), function(i, s) {
+        ps.push('<p>' + s + '</p>');
+    });
+    return ps.join('');
+}
+
 function make_poem_boxes(ps) {
     var L = []
     $.each(ps, function(i, p) {
