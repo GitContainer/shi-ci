@@ -1,5 +1,6 @@
 package com.itranswarp.shici;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
@@ -63,4 +64,14 @@ public class Utils {
         }
         return sb.toString();
     }
+
+    static void close(Closeable io) {
+    	if (io==null)
+    		return;
+    	try {
+    		io.close();
+    	}
+    	catch (IOException e) {}
+    }
+
 }

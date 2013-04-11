@@ -48,14 +48,12 @@ public class SearchServlet extends HttpServlet {
 	static final String MYSQL_JDBC_USER = "www-data";
 	static final String MYSQL_JDBC_PASSWD = "www-data";
 
-	static final String INDEX_KEY = "@lucene.shi-ci.com";
-
 	Log log = LogFactory.getLog(getClass());
 	PoemSearcher searcher = null;
 	Timer timer = null;
 
 	class ScanTask extends TimerTask {
-		static final String SEARCH_FROM_FILE = "/srv/search.shi-ci.db/lucene/search_from";
+		static final String LAST_INDEX_POINT = "/srv/search.shi-ci.db/lucene_search_from";
 
 		public ScanTask() {
 			try {
@@ -145,7 +143,7 @@ public class SearchServlet extends HttpServlet {
 		}
 
 		void write(long search_from) {
-			File f = new File(SEARCH_FROM_FILE);
+			File f = new File(LAST_INDEX_POINT);
 			BufferedWriter writer = null;
 			try {
 				writer = new BufferedWriter(new FileWriter(f));
@@ -156,17 +154,13 @@ public class SearchServlet extends HttpServlet {
 				log.warn("write last search from failed.", e);
 			}
 			finally {
-				if (writer!=null)
-					try {
-						writer.close();
-					}
-					catch (IOException e) {}
+				Utils.close(writer);
 			}
 		}
 
 		long read() {
 			long search_from = 0L;
-			File f = new File(SEARCH_FROM_FILE);
+			File f = new File(LAST_INDEX_POINT);
 			if (f.isFile()) {
 				BufferedReader reader = null;
 				try {
@@ -178,11 +172,7 @@ public class SearchServlet extends HttpServlet {
 					log.warn("read last search from failed.", e);
 				}
 				finally {
-					if (reader!=null)
-						try {
-							reader.close();
-						}
-						catch (IOException e) {}
+					Utils.close(reader);
 				}
 			}
 			log.info("read last search from = " + search_from);
@@ -208,7 +198,7 @@ public class SearchServlet extends HttpServlet {
 			throw new ServletException("Bad time");
 		String action = getRequiredParam(req, "action");
 		String sig = getRequiredParam(req, "sig");
-		if ( ! sig.equals(Utils.md5(current + ":" + action + ":" + INDEX_KEY)))
+		if ( ! sig.equals(Utils.md5(current + ":" + action + ":" + Config.KEY)))
 			throw new ServletException("Bad sig");
 		if ("index".equals(action)) {
 			Poem p = new Poem();
@@ -246,7 +236,6 @@ public class SearchServlet extends HttpServlet {
 	}
 
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		String callback = req.getParameter("callback");
 		try {
     		String q = getRequiredParam(req, "q");
     		log.info("Search for " + q);
@@ -268,12 +257,8 @@ public class SearchServlet extends HttpServlet {
     		if (len > 5)
     			len = 5;
     		SearchResult sr = searcher.search(qs, len, filter, next, MAX_RESULTS);
-    		resp.setContentType(callback==null ? "application/json" : "application/javascript");
+    		resp.setContentType("application/json");
 			PrintWriter pw = resp.getWriter();
-			if (callback!=null) {
-				pw.write(callback);
-				pw.write("(");
-			}
     		JsonWriter jwriter = new JsonWriter(pw);
     		jwriter.beginObject();
     		jwriter.name("total").value(sr.total);
@@ -308,38 +293,21 @@ public class SearchServlet extends HttpServlet {
     		}
     		jwriter.endArray();
     		jwriter.endObject();
-			if (callback!=null) {
-				pw.write(");");
-			}
 			jwriter.close();
 			pw.flush();
 		}
 		catch (SearchException e) {
 			log.warn("Search Exception.", e);
 			PrintWriter pw = resp.getWriter();
-			if (callback!=null) {
-				pw.write(callback);
-				pw.write("(");
-			}
 			pw.print(e.toJsonString());
-			if (callback!=null) {
-				pw.write(");");
-			}
 			pw.flush();
 		}
 		catch (Exception e) {
 			log.warn("Servlet Error.", e);
 			PrintWriter pw = resp.getWriter();
-			if (callback!=null) {
-				pw.write(callback);
-				pw.write("(");
-			}
 			pw.print("{\"error\":\"");
 			pw.print(e.getClass().getName());
 			pw.print("\"}");
-			if (callback!=null) {
-				pw.write(");");
-			}
 			pw.flush();
 		}
 	}
