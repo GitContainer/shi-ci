@@ -3,55 +3,312 @@
 
 __author__ = 'Michael Liao'
 
+import json, time, random, urllib, hashlib, logging, datetime, functools
+from datetime import datetime
+
+from transwarp.web import ctx, get, post, notfound, seeother, Template
+from transwarp import db, cache
+from weibo import APIClient
+
+import auth
+import lunar
+
 try:
-    import json
+    from config import SHI_CI_ID, APP_KEY, APP_SECRET
 except ImportError:
-    import simplejson as json
-import time
-import random
-import hashlib
-import logging
-import datetime
+    pass
 
-from lunar import get_lunar_date
-from weibo import APIClient, _encode_params
+COOKIE_REDIRECT = 'redirect'
 
-from framework import cache, Page, next_id, handler, create_oauth_cookie, COOKIE_NAME, COOKIE_EXPIRES
+CALLBACK = 'http://www.shi-ci.com/auth/callback'
 
-import web
+PAGE_SIZE = 20
 
-################################################################################
-# private constants                                                            #
-################################################################################
+STATIC_PATH_PREFIX = ''
 
-_SIGN_SALT = '#WWW-ShiCi-zh#'
+def cached(timeout=36000):
+    def _decorator(func):
+        @functools.wraps(func)
+        def _wrapper(*args):
+            key = 'SC_%s' % func.__name__
+            if args:
+                key = '%s_%s' % (key, ''.join(map(str, args)))
+            r = cache.client.get(key)
+            if r:
+                logging.info('Hit cache!')
+                return r
+            logging.info('Not hit cache!')
+            r = func(*args)
+            cache.client.set(key, r, timeout)
+            return r
+        return _wrapper
+    return _decorator
 
-_SHI_CI_ID = 'weibo_1926704223'
+def template(path):
+    def _decorator(func):
+        @functools.wraps(func)
+        def _wrapper(*args, **kw):
+            r = func(*args, **kw)
+            if isinstance(r, dict):
+                y, m, d = get_today()
+                r['__lunar_date__'] = get_lunar(y, m, d)
+                r['__user__'] = ctx.user
+                r['static_prefix'] = '' if ctx.application.debug else STATIC_PATH_PREFIX
+                return Template('templates/%s' % path, r)
+            return r
+        return _wrapper
+    return _decorator
 
-_APP_KEY = '2370412278'
-_APP_SECRET = '1509cfa7864a37b9471bc25d377a7cc8'
-_CALLBACK = 'http://www.shi-ci.com/auth_callback2'
+def api(func):
+    '''
+    A decorator that makes a function to api, makes the return value as json.
+    '''
+    @functools.wraps(func)
+    def _wrapper(*args, **kw):
+        ctx.response.content_type = 'application/json; charset=utf-8'
+        return json.dumps(func(*args, **kw))
+    return _wrapper
 
-_PAGE_SIZE = 20
+def get_today():
+    dt = datetime.now()
+    return dt.year, dt.month, dt.day
 
-################################################################################
-# private functions                                                            #
-################################################################################
+def get_lunar(y, m, d):
+    dt = datetime(y, m, d)
+    ly, lm, ld, ll = lunar.get_lunar_date(dt)
+    nm = lunar.name_of_month(lm, ll)
+    nd = lunar.name_of_day(ld)
+    jieqi = lunar.get_jieqi(y, m, d)
+    if jieqi:
+        return u'%s%s %s' % (nm, nd, jieqi)
+    return u'%s%s' % (nm, nd)
 
-@cache(10800)
-def _get_featured_poems():
-    total = web.ctx.db.query('select count(id) as num from poem where ilike>=100')[0].num
+@cached()
+def get_dynasty(dyn_id):
+    L = get_dynasties()
+    for d in L:
+        if d.id==dyn_id:
+            return d
+    raise notfound()
+
+@cached()
+def get_dynasties():
+    return db.select('select * from dynasty order by display_order')
+
+@cached()
+def get_poet(poet_id):
+    return db.select_one('select * from poet where id=?', poet_id)
+
+@api
+@cached()
+@get('/m_featured')
+def featured_poems():
+    total = db.select_int('select count(id) as num from poem where ilike>=100')
     s = set()
     while len(s)<5:
         s.add(random.randint(0, total-1))
-    L1 = [web.ctx.db.query('select * from poem where ilike>=100 order by id limit $first, $max', vars={'first':n, 'max':1})[0] for n in s]
-    total = web.ctx.db.query('select count(id) as num from poem where ilike<100')[0].num
+    L = []
+    for n in s:
+        L.extend(db.select('select * from poem where ilike>=100 order by id limit ?,?', n, 1))
+    total = db.select_int('select count(id) from poem where ilike<100')
     s = set()
     while len(s)<5:
         s.add(random.randint(0, total-1))
-    L2 = [web.ctx.db.query('select * from poem where ilike<100 order by id limit $first, $max', vars={'first':n, 'max':1})[0] for n in s]
-    L1.extend(L2)
-    return L1
+    for n in s:
+        L.extend(db.select('select * from poem where ilike<100 order by id limit ?,?', n, 1))
+    return L
+
+@get('/')
+@template('index.html')
+def index_page():
+    return dict(title=u'首页', dynasties=get_dynasties())
+
+@get('/dynasty/<dyn_id>')
+@template('dynasty.html')
+def dynasty_page(dyn_id):
+    '''
+    GET /dynasty/{dynasty_id}/{page}
+    
+    Show dynasty page.
+    '''
+    dynasty = get_dynasty(dyn_id)
+    dynasties = get_dynasties()
+    poets = db.select('select * from poet where dynasty_id=? order by pinyin', dyn_id)
+    return dict(title=dynasty.name, dynasty=dynasty, dynasties=dynasties, poets=poets)
+
+def get_poems(poet_id, page=1):
+    '''
+    Return poems of page N (N=1, 2, 3) and has_next.
+    '''
+    if page < 1 or page > 100:
+        raise ValueError('invalid page.')
+    offset = PAGE_SIZE * (page - 1)
+    maximum = PAGE_SIZE + 1
+    L = db.select('select * from poem where poet_id=? order by name_pinyin limit ?,?', poet_id, offset, maximum)
+    if len(L) == maximum:
+        return L[:-1], True
+    return L, False
+
+@get('/poet/<poet_id>')
+@template('poet.html')
+def poet_page(poet_id):
+    page = 1
+    poet = get_poet(poet_id)
+    dynasty = get_dynasty(poet.dynasty_id)
+    dynasties = get_dynasties()
+    poems, next = get_poems(poet_id, page)
+    return dict(title=poet.name, dynasty=dynasty, dynasties=dynasties, poet=poet, poems=poems, page=page, next=next)
+
+@api
+@get('/more/poems')
+def more_poems():
+    i = ctx.request.input(poet_id='', page='')
+    poems, next = get_poems(i.poet_id, int(i.page))
+    return dict(poems=poems, next=next)
+
+@cached()
+def get_poem(poem_id):
+    return db.select_one('select * from poem where id=?', poem_id)
+
+@get('/poem/<poem_id>')
+@template('poem.html')
+def poem_page(poem_id):
+    poem = get_poem(poem_id)
+    poet = get_poet(poem.poet_id)
+    dynasty = get_dynasty(poet.dynasty_id)
+    dynasties = get_dynasties()
+    return dict(title=poem.name, dynasties=dynasties, dynasty=dynasty, poet=poet, poem=poem)
+
+@get('/auth/signin')
+def auth_signin():
+    '''
+    Redirect to sina sign in page.
+    '''
+    ctx.response.set_cookie(COOKIE_REDIRECT, _get_referer())
+    client = APIClient(app_key=APP_KEY, app_secret=APP_SECRET, redirect_uri=CALLBACK)
+    raise seeother(client.get_authorize_url())
+
+def _get_referer():
+    '''
+    Get referer url for redirecting after signin.
+    '''
+    referer = ctx.request.header('REFERER', '/')
+    if referer.startswith('http://www.shi-ci.com/'):
+        referer = referer[21:]
+    if referer.startswith('/auth/'):
+        return '/'
+    return referer
+
+@get('/auth/callback')
+def auth_callback():
+    '''
+    Callback from sina, then redirect to previous url.
+    '''
+    code = ctx.request.input(code='').code
+    if not code:
+        raise seeother('/s/auth_failed')
+    client = APIClient(app_key=APP_KEY, app_secret=APP_SECRET, redirect_uri=CALLBACK)
+    r = client.request_access_token(code)
+    access_token = r.access_token
+    expires = r.expires_in
+    uid = r.uid
+    # get user info:
+    client.set_access_token(access_token, expires)
+    account = client.users.show.get(uid=uid)
+    image = account.get(u'profile_image_url', u'about:blank')
+    logging.info('got account: %s' % str(account))
+    name = account.get('screen_name', u'') or account.get('name', u'')
+
+    id = u'weibo_%s' % uid
+    user = auth.fn_load_user(id)
+    if user:
+        # update user if necessary:
+        db.update('update user set name=?, oauth_image=?, oauth_access_token=?, oauth_expires=? where id=?', \
+                name, image, access_token, expires, id)
+    else:
+        db.insert('user', \
+                id = id, \
+                name = name, \
+                oauth_access_token = access_token, \
+                oauth_expires = expires, \
+                oauth_url = u'http://weibo.com/u/%s' % uid, \
+                oauth_image = image, \
+                admin = False)
+    # make a signin cookie:
+    cookie_str = auth.make_session_cookie(id, access_token, expires)
+    logging.info('will set cookie: %s' % cookie_str)
+    redirect = ctx.request.cookie(COOKIE_REDIRECT, '/')
+    ctx.response.set_cookie(auth.COOKIE_AUTH, cookie_str, expires=expires)
+    ctx.response.delete_cookie(COOKIE_REDIRECT)
+    raise seeother(redirect)
+
+@get('/auth/signout')
+def auth_signout():
+    '''
+    Sign out and redirect to previous page.
+    '''
+    ctx.response.delete_cookie(auth.COOKIE_AUTH)
+    raise seeother(_get_referer())
+
+########## static page ##########
+
+@get('/weixin')
+@template('weixin.html')
+def weixin_page():
+    return dict(title=u'微信公众号', dynasties=get_dynasties())
+
+@get('/app')
+@template('app.html')
+def app_page():
+    return dict(title=u'中华诗词App', dynasties=get_dynasties())
+
+# search page:
+@get('/s')
+@template('search.html')
+def search():
+    i = ctx.request.input(q=u'', dynasty_id='', poet_id='', form='')
+    q = i.q
+    dynasty_id = ''
+    poet_id = ''
+    poet = None
+    d = dict(title=u'搜索结果', dynasties=get_dynasties(), form=i.form, q=q)
+    if 'poet_option' in i:
+        d['poet_id'] = i.poet_id
+        d['poet_option'] = i.poet_option
+        d['poet'] = get_poet(i.poet_option)
+        d['search_url'] = '/search?poet_id=%s&form=%s&q=%s' % (i.poet_id, i.form, urllib.quote(q.encode('utf-8')))
+    else:
+        d['dynasty_id'] = i.dynasty_id
+        d['search_url'] = '/search?dynasty_id=%s&form=%s&q=%s' % (i.dynasty_id, i.form, urllib.quote(q.encode('utf-8')))
+    return d
+
+
+
+
+
+
+
+
+
+
+
+@get('/search')
+def search_api():
+    '''
+    Just for search test.
+    '''
+    i = ctx.request.input(dynasty_id='', poet_id='')
+    import httplib
+    conn = httplib.HTTPConnection('search.shi-ci.com')
+    conn.request('GET', '/search?dynasty_id=%s&poet_id=%s&form=%s&q=%s' % (i.dynasty_id, i.poet_id, i.form, urllib.quote(i.q.encode('utf-8'))))
+    resp = conn.getresponse()
+    data = resp.read()
+    ctx.response.content_type = 'application/json'
+    return data
+#    return dict(total=100, next='MjQzMzl8My44NDEyODkz', poems=get_featured_poems())
+
+
+
 
 def _get_oauth_id(user_id):
     n = user_id.find(u'_')
@@ -90,17 +347,6 @@ def _post_poem(poem):
     logging.info('statuses/update result: %s' % str(r))
     return r['id']
 
-def _get_referer():
-    '''
-    Get referer url for redirecting after signin.
-    '''
-    referer = web.ctx.env.get('HTTP_REFERER', '/')
-    if referer.startswith('http') and not referer.startswith('http://www.shi-ci.com/'):
-        return '/'
-    if referer.find('auth_') != (-1):
-        return '/'
-    return referer
-
 def _load_poet_comments(poet_id):
     '''
     Load comments of a poet.
@@ -123,7 +369,6 @@ def _load_poem_comments(poem_id):
         c.poem = None
     return comments
 
-@cache(600)
 def _load_recent_comments():
     '''
     Load recent comments.
@@ -137,7 +382,7 @@ def _load_recent_comments():
             c.poem = None
     return comments
 
-def _get_page(str, total_items, pagesize=_PAGE_SIZE):
+def _get_page(str, total_items, pagesize=PAGE_SIZE):
     '''
     Get page object.
     '''
@@ -148,11 +393,6 @@ def _get_page(str, total_items, pagesize=_PAGE_SIZE):
         raise web.notfound('invalid page')
     return Page(total_items, p, pagesize)
 
-@cache(36000)
-def _load_dynasty():
-    return list(web.ctx.db.select('dynasty', order='display_order'))
-
-@cache(36000)
 def _load_category():
     return list(web.ctx.db.select('category', order='display_order'))
 
@@ -173,18 +413,15 @@ def check_admin():
             return
     raise web.forbidden()
 
-@handler('GET')
 def admin_set_famous(poem_id):
     check_admin()
     web.ctx.db.update('poem', where='id=$id', vars=dict(id=poem_id), ilike=random.randint(100,1000))
     return '200 OK'
 
-@handler('GET')
 def admin_will_add_poem():
     check_admin()
     return _init_dict(title="ADD", locations=(), comments=())
 
-@handler('POST')
 def admin_add_poem():
     check_admin()
     import utils
@@ -220,13 +457,11 @@ def admin_add_poem():
     web.ctx.db.insert('poem', **d)
     raise web.found('/poem/%s' % d['id'])
 
-@handler('GET')
 def admin_edit_poem(id):
     check_admin()
     L = list(web.ctx.db.select('poem', where='id=$id', vars=dict(id=id)))
     return _init_dict(title="EDIT", locations=(), comments=(), poem=L[0])
 
-@handler('POST')
 def admin_update_poem():
     check_admin()
     import utils
@@ -243,98 +478,15 @@ def admin_update_poem():
     web.ctx.db.update('poem', where='id=$id', vars=dict(id=id), ilike=ilike, form=form, name=name, name_cht=name_cht, name_pinyin=name_pinyin, content=content, content_cht=content_cht, content_pinyin=content_pinyin, version=int(time.time()))
     raise web.found('/poem/%s' % id)
 
-@handler('GET')
-def test():
-    '''
-    Test page
-    '''
-    return _init_dict(title=u'测试页', locations=((u'中华诗词', '/'), (u'测试页', None),), comments=_load_recent_comments())
-
-@handler('GET')
-def support():
-    '''
-    GET /support
-    
-    Show help page.
-    '''
-    return _init_dict(title=u'帮助', locations=((u'中华诗词', '/'), (u'帮助', None),), comments=())
-
-@handler('GET')
-def index():
-    '''
-    GET /
-    
-    Show index page.
-    '''
-    return _init_dict(title=u'首页', locations=((u'中华诗词', '/'), (u'首页', None),), featured=_get_featured_poems(), comments=_load_recent_comments())
-
-@handler('GET')
-def search():
-    i = web.input(q=u'', dynasty=u'', form=u'', category=u'')
-    return _init_dict(title=u'搜索结果', locations=((u'中华诗词', '/'), (u'搜索结果', None),), q=i.q, q_dynasty=i.dynasty, q_form=i.form, q_category=i.category, comments=_load_recent_comments())
-
-@handler('GET')
-def dynasty(id, ps='1'):
-    '''
-    GET /dynasty/{dynasty_id}/{page}
-    
-    Show dynasty page.
-    '''
-    L = list(web.ctx.db.select('dynasty', where='id=$id', vars=dict(id=id)))
-    if not L:
-        raise web.notfound('invalid dynasty')
-    dynasty = L[0]
-    p = _get_page(ps, dynasty.poet_count)
-    poets = list(web.ctx.db.select('poet', where='dynasty_id=$id', vars=dict(id=id), order='name', limit=p.__limit__, offset=p.__offset__))
-    return _init_dict(title=dynasty.name, locations=((u'中华诗词', '/'), (dynasty.name, None),), dynasty=dynasty, page=p, poets=poets, comments=_load_recent_comments())
-
-@handler('GET')
-def poet(id, ps='1'):
-    '''
-    GET /poet/{poet_id}/{page}
-    
-    Show poet page.
-    '''
-    L = list(web.ctx.db.select('poet', where='id=$id', vars=dict(id=id)))
-    if not L:
-        raise web.notfound('no such poet')
-    poet = L[0]
-
-    p = _get_page(ps, poet.poem_count)
-    poems = list(web.ctx.db.select('poem', where='poet_id=$id', vars=dict(id=id), limit=p.__limit__, offset=p.__offset__, order='name_pinyin'))
-    locations = ( \
-            (u'中华诗词', '/'), \
-            (poet.dynasty_name, '/dynasty/%s' % poet.dynasty_id), \
-            (poet.name, None),)
-    return _init_dict(title=poet.name, locations=locations, poet=poet, page=p, poems=poems, comments=_load_poet_comments(id))
-
-@handler('GET')
-def auth_failed():
+def _old_auth_failed():
     return _init_dict(title=u'登录失败', locations=((u'中华诗词', '/'), (u'登录失败', None),))
 
-@handler('GET')
-def poem(id):
-    '''
-    GET /poem/{poem_id}
-    
-    Show poem page.
-    '''
-    L = list(web.ctx.db.select('poem', where='id=$id', vars=dict(id=id)))
-    if not L:
-        raise web.notfound('no such poem')
-    poem = L[0]
-    locations = ( \
-            (u'中华诗词', '/'), \
-            (poem.dynasty_name, '/dynasty/%s' % poem.dynasty_id), \
-            (poem.poet_name, '/poet/%s' % poem.poet_id), \
-            (poem.name, None),)
-    return _init_dict(title=poem.name, locations=locations, poem=poem, comments=_load_poem_comments(id))
-
-def _posted_before(now, dt):
+def _old__posted_before(now, dt):
     delta = now - dt
     return delta.days * 86400 + delta.seconds
 
-@handler('GET')
+@api
+@get('/m_poem_comments')
 def m_poem_comments(id, ps='1'):
     '''
     GET /m_poem_comments/{poem_id}/{page}
@@ -344,7 +496,7 @@ def m_poem_comments(id, ps='1'):
         return r'{"error":"invalid_page","description":"invalid page."}'
     page_size = 20
     offset = page_size * (page - 1)
-    L = list(web.ctx.db.select('poem', where='id=$id', vars=dict(id=id)))
+    L = db.select('select * from poem where id=?', id)
     if not L:
         return r'{"error":"not_found","description":"poem not found."}'
     poem = L[0]
@@ -353,12 +505,12 @@ def m_poem_comments(id, ps='1'):
     if has_next:
         comments = comments[:-1]
     now = datetime.datetime.now()
-    return json.dumps(dict(
+    return dict(
             page = page, \
             next = has_next, \
             time = time.time(), \
             comments = [dict(user_name=c.user_name, user_image=c.user_image, user_url=c.user_url, content=c.content, posted_before=_posted_before(now, c.creation_time)) for c in comments] \
-    ))
+    )
 
 def _comment():
     '''
@@ -397,29 +549,11 @@ def _comment():
     web.ctx.db.query('update poem set comment_count=comment_count+1 where id=$id', vars=dict(id=i.id))
     return json.dumps(dict(id=rid, url=url))
 
-@handler('POST')
-def comment():
+def _old_comment():
     return _comment()
 
-@handler('POST')
 def m_comment():
     return _comment()
-
-@handler('GET')
-def auth_signout():
-    '''
-    Sign out and redirect to previous page.
-    '''
-    web.setcookie(COOKIE_NAME, 'deleted', -360000)
-    web.seeother(_get_referer())
-
-@handler('GET')
-def auth_signin():
-    '''
-    Redirect to sina sign in page.
-    '''
-    client = APIClient(app_key=_APP_KEY, app_secret=_APP_SECRET, redirect_uri=_CALLBACK)
-    raise web.seeother(client.get_authorize_url())
 
 def _user_info_after_oauth(client, access_token, expires, uid):
     client.set_access_token(access_token, expires)
@@ -452,25 +586,8 @@ def _user_info_after_oauth(client, access_token, expires, uid):
     logging.info('will set cookie: %s' % cookie_str)
     return dict(cookie=cookie_str, id=id, name=name, image=image)
 
-@handler('GET')
-def auth_callback2():
-    '''
-    Callback from sina, then redirect to previous url.
-    '''
-    i = web.input(code=u'')
-    if not i.code:
-        raise web.seeother('/auth_failed')
-    client = APIClient(app_key=_APP_KEY, app_secret=_APP_SECRET, redirect_uri=_CALLBACK)
-    r = client.request_access_token(i.code)
-    access_token = r.access_token
-    expires_in = r.expires_in
-    uid = r.uid
-    info = _user_info_after_oauth(client, access_token, expires_in, uid)
-    # make a signin cookie:
-    web.setcookie(COOKIE_NAME, info['cookie'], expires_in - int(time.time()) - 600)
-    raise web.seeother('http://www.shi-ci.com/')
-
-@handler('GET', 'application/json')
+@api
+@get('/m_poem/<id>')
 def m_poem(id):
     '''
     GET /m_poem/{poem_id}
@@ -478,40 +595,22 @@ def m_poem(id):
     Returns:
         Poem json.
     '''
-    _check_sign('m_poem', str(id))
-    L = list(web.ctx.db.select('poem', where='id=$id', vars=dict(id=id)))
-    if not L:
-        return '{"error":"not_found"}'
-    p = L[0]
+    p = get_poem(id)
     d = dict(**p)
     del d['weibo_id']
     del d['weibo_cht_id']
-    return json.dumps(d)
+    return d
 
-@handler('GET', 'application/json')
-@cache(10800)
-def m_featured():
-    _check_sign('m_featured')
-    ps = _get_featured_poems()
-    return json.dumps(dict(poems=ps))
-
-@handler('GET', 'application/json')
-def m_favorites():
-    _check_sign('m_favorites')
-    return json.dumps(dict(poems=[]))
-
-@handler('GET', 'application/json')
+@api
+@get('/m_categories')
 def m_categories():
-    _check_sign('m_categories')
-    cats = _load_category()
-    return json.dumps(dict(categories=cats))
+    return dict(categories=_load_category())
 
-@handler('GET', 'application/json')
-@cache(36000)
+@api
+@get('/m_category/<id>')
 def m_category(id):
-    _check_sign('m_category')
-    poems = list(web.ctx.db.query('select p.* from category_poem cp inner join poem p on cp.poem_id=p.id where cp.category_id=$id', vars=dict(id=id)))
-    return json.dumps(dict(poems=poems))
+    poems = db.select('select p.* from category_poem cp inner join poem p on cp.poem_id=p.id where cp.category_id=?', id)
+    return dict(poems=poems)
 
 def _share(id):
     '''
@@ -531,7 +630,6 @@ def _share(id):
     redirect = 'http://api.t.sina.com.cn/%s/statuses/%s' % (_get_oauth_id(user.id), rid)
     return '{"url":"%s"}' % redirect
 
-@handler('GET')
 def share(id):
     '''
     GET /share/{poem_id}
@@ -541,7 +639,6 @@ def share(id):
     '''
     return _share(id)
 
-@handler('GET')
 def m_share(id):
     '''
     GET /m_share/{poem_id}
@@ -551,98 +648,3 @@ def m_share(id):
     '''
     return _share(id)
 
-@handler('POST')
-def auth_mobile_signin():
-    '''
-    POST /auth_mobile_signin
-    
-    email=xxx@example.com&passwd=PASSWORD
-    
-    Returns:
-        json string contains access token.
-    '''
-    web.header('Content-Type', 'application/json')
-    i = web.input(email=u'', passwd=u'')
-    email = i.email
-    passwd = i.passwd
-    if not email or not passwd:
-        return r'{"error":"missing_param"}'
-    client = APIClient(_APP_KEY, _APP_SECRET, callback=_CALLBACK)
-    t = client.get_request_token()
-
-    oauth_token = t.oauth_token
-    oauth_token_secret = t.oauth_token_secret
-
-    logging.info('oauth_token = %s' % t.oauth_token)
-    logging.info('oauth_token_secret = %s' % t.oauth_token_secret)
-
-    url = client.get_authorize_url(t.oauth_token)
-    logging.info('GET authorize url: %s' % url)
-
-    import httplib
-    headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6) Firefox/8.0.1',
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Referer': 'http://www.shi-ci.com/auth_signin'
-    }
-    conn = httplib.HTTPConnection('api.t.sina.com.cn')
-    conn.request('GET', '/oauth/authorize?oauth_token=%s' % oauth_token, headers=headers)
-    resp = conn.getresponse()
-    if resp.status!=200:
-        logging.info('Failed to get oauth/authorize.')
-        return r'{"error":"auth_failed"}'
-    body = resp.read()
-    INPUT_VERIFY_TOKEN = r'<input type="hidden" name="verifyToken" value="'
-    n1 = body.find(INPUT_VERIFY_TOKEN)
-    if n1==(-1):
-        logging.info('Failed to find verifyToken.')
-        return r'{"error":"auth_failed"}'
-    n2 = body.find(r'"/>', n1)
-    if n2==(-1):
-        logging.info('Failed to find verifyToken.')
-        return r'{"error":"auth_failed"}'
-    verifyToken = body[n1+len(INPUT_VERIFY_TOKEN):n2]
-    logging.info('Find verifyToken: %s' % verifyToken)
-
-    data = {
-            'action': 'submit',
-            'forcelogin': '',
-            'from': '',
-            'oauth_callback': _CALLBACK,
-            'oauth_token': oauth_token,
-            'verifyToken': verifyToken,
-            'userId': email,
-            'passwd': passwd,
-            'regCallback': 'http://api.t.sina.com.cn/oauth/authorize?oauth_token=%s&oauth_callback=%s&from=&with_cookie=' % (oauth_token, _CALLBACK),
-    }
-    headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6) Firefox/8.0.1',
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Referer': 'http://api.t.sina.com.cn/oauth/authorize?oauth_token=%s' % oauth_token,
-    }
-    print _encode_params(**data)
-    conn = httplib.HTTPConnection('api.t.sina.com.cn')
-    conn.request('POST', '/oauth/authorize', body=_encode_params(**data), headers=headers)
-    resp = conn.getresponse()
-    if resp.status!=302:
-        return r'{"error":"auth_failed"}'
-    location = resp.getheader('Location')
-    logging.info('Got redirect location: %s' % location)
-    query = location[location.find('?')+1:]
-    access_token = APIClient(_APP_KEY, _APP_SECRET, token=t2).get_access_token()
-
-    info = _user_info_after_oauth(access_token)
-    return json.dumps(info)
-
-def _check_sign(*args):
-    if True:
-        return
-    actual = str(web.input(sign='').sign)
-    if len(actual)==32:
-        L = [_SIGN_SALT]
-        L.extend(args)
-        expected = hashlib.md5(''.join(L)).hexdigest()
-        if expected==actual:
-            return
-        logging.warn('bad sign: expected %s but %s' % (expected, actual))
-    raise web.forbidden('bad signature')
