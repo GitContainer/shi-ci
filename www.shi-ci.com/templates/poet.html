@@ -2,10 +2,11 @@
 
 <script type="text/javascript">
 $(function() {
-    var normal_text = $('#more').text();
+    var loading_text = $('#more').text();
+    var normal_text = '显示{{ poet.name|e }}的更多诗词';
     $('#more').click(function() {
         var page = parseInt($('#more').attr('page'));
-        $('#more').attr('disabled', 'disabled').text('正在获取更多诗词，请稍候……').addClass('loading');
+        $('#more').attr('disabled', 'disabled').text(loading_text).addClass('loading');
         $.getJSON('/more/poems?poet_id={{ poet.id }}&page=' + page)
          .done(function(result) {
             if (result.next) {
@@ -24,6 +25,7 @@ $(function() {
             $('#more').removeAttr('disabled').removeClass('loading');
         });
     });
+    $('#more').trigger('click');
 });
 </script>
 
@@ -31,36 +33,36 @@ $(function() {
         <div class="row">
             <div class="frame">
                 <div class="frame-inner">
-                    <div>
-                        <form id="search" name="search" action="#" method="get">
-                            在六万余首诗词中搜索：<input name="q" type="text" maxlength="15" class="search" placeholder="请输入关键词" /> <button class="btn">搜索</button>
-                        </form>
-                    </div>
-                    <div class="condition condition-poet">诗人：<span>所有</span> <span v="{{ poet.id }}" class="selected">{{ poet.name }}</span></div>
-                    <div class="condition">格式：<span class="selected">不限</span> <span>五律</span> <span>五绝</span> <span>七律</span> <span>七绝</span> <span>词</span> <span>曲</span> <span>赋</span></div>
+                    <form id="search" name="search" action="#" method="get">
+                        <div>
+                            在六万余首诗词中搜索：<input name="q" type="text" maxlength="15" class="search" placeholder="请输入关键词" /> <button class="btn search">搜索</button>
+                        </div>
+                        <div class="condition condition-poet">诗人：<span v="">所有</span> <span v="{{ poet.id }}" class="selected poet">{{ poet.name }}</span></div>
+                        <div class="condition condition-form">格式：<span class="selected" v="">不限</span> <span v="58">五律</span> <span v="54">五绝</span> <span v="78">七律</span> <span v="74">七绝</span> <span v="9">词</span> <span v="8">曲</span> <span v="15">赋</span></div>
+                    </form>
                 </div>
             </div>
         </div>
+
         <div class="row">
-            <div id="poems">
-{% for p in poems %}
-                <div class="item">
-                    <div class="item-header"></div>
-                    <div class="item-body">
-                        <p><a href="/poem/{{ p.id }}">{{ p.name }}</a></p>
-                        <p>{{ p.content }}</p>
-                    </div>
-                    <div class="item-footer"></div>
+            <div class="frame">
+                <div class="frame-inner poet-info">
+                    <div>诗人：{{ poet.name }}</div>
+                    <div>简介：</div>
+                    <div>{{ poet.description }}</div>
                 </div>
-{% endfor %}
             </div>
         </div>
-{% if next %}
+
+        <div class="row">
+            <div id="poems"></div>
+        </div>
+
         <div class="row">
             <div class="more">
-                <button id="more" page="2" class="btn">显示更多诗词</button>
+                <button id="more" page="1" class="loading btn">正在获取诗词，请稍候……</button>
             </div>
         </div>
-{% endif %}
+
     </div>
 {% include 'templates/_footer.html' %}

@@ -21,7 +21,7 @@
     <div class="container">
         <div class="row">
             <div id="header">
-                <div class="logo"><a href="/"></a></div>
+                <div class="logo"><a href="/"></a><div class="date">今天是农历{{ __lunar_date__ }}</div></div>
 {% if __user__ %}
                 <div class="signed">
                     <a href="http://weibo.com/1658384301" target="_blank" class="profile" style="background-image:url(http://tp2.sinaimg.cn/1658384301/50/5644905735/1)"></a>
@@ -43,7 +43,6 @@
             {% for d in dynasties %}
                 <a href="/dynasty/{{ d.id }}">{{ d.name }}</a>
             {% endfor %}
-                <span class="date">农历二月廿四，清明</span>
             </div>
         </div>
     </div>
