@@ -236,7 +236,7 @@ public class SearchServlet extends HttpServlet {
 	}
 
 	boolean isEmpty(String s) {
-		return s!=null && !"".equals(s);
+		return s==null || "".equals(s);
 	}
 
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
