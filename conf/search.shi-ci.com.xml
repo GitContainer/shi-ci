@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://jetty.mortbay.org/configure.dtd">
+<!--
+  Configuration file for Jetty:
+    /etc/jetty/search.shi-ci.com.xml
+  and make symbol link:
+    /etc/jetty/jetty.xml -> /etc/jetty/search.shi-ci.com.xml
+
+  powering http://search.shi-ci.com/
+
+  the file '/etc/jetty/jetty.conf' should be:
+
+    # list of jetty configuration and property files
+    /etc/jetty/jetty-logging.xml
+    /etc/jetty/jetty.xml
+    #/etc/jetty/jetty-shared-webapps.xml
+
+-->
+<Configure id="Server" class="org.mortbay.jetty.Server">
+  <Set name="ThreadPool">
+    <New class="org.mortbay.thread.QueuedThreadPool">
+      <Set name="minThreads">10</Set>
+      <Set name="maxThreads">50</Set>
+      <Set name="lowThreads">20</Set>
+      <Set name="SpawnOrShrinkAt">2</Set>
+    </New>
+  </Set>
+
+  <Call name="addConnector">
+    <Arg>
+      <New class="org.mortbay.jetty.nio.SelectChannelConnector">
+        <Set name="host"><SystemProperty name="jetty.host" default="127.0.0.1" /></Set>
+        <Set name="port"><SystemProperty name="jetty.port" default="8080" /></Set>
+        <Set name="maxIdleTime">60000</Set>
+        <Set name="Acceptors">2</Set>
+        <Set name="statsOn">false</Set>
+        <Set name="confidentialPort">8443</Set>
+        <Set name="lowResourcesConnections">5000</Set>
+        <Set name="lowResourcesMaxIdleTime">5000</Set>
+      </New>
+    </Arg>
+  </Call>
+
+  <Call name="addHandler">
+    <Arg>
+      <New class="org.mortbay.jetty.webapp.WebAppContext">
+        <Arg>/srv/search.shi-ci.com/www/</Arg>
+        <Arg>/</Arg>
+        <Set name="extractWAR">false</Set>
+      </New>
+    </Arg>
+  </Call>
+
+  <!-- =========================================================== -->
+  <!-- extra options                                               -->
+  <!-- =========================================================== -->
+  <Set name="stopAtShutdown">true</Set>
+  <Set name="sendServerVersion">true</Set>
+  <Set name="sendDateHeader">true</Set>
+  <Set name="gracefulShutdown">10000</Set>
+
+</Configure>
