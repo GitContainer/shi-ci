@@ -6,7 +6,7 @@ from datetime import datetime
 g_tiangan = u'甲乙丙丁戊己庚辛壬癸'
 g_dizhi = u'子丑寅卯辰巳午未申酉戌亥'
 
-g_months = (u'正月', u'二月', u'三月', u'四月', u'五月', u'六月', u'七月', u'八月', u'九月', u'十月', u'十一月', u'十二月')
+g_months = (u'正月', u'二月', u'三月', u'四月', u'五月', u'六月', u'七月', u'八月', u'九月', u'十月', u'十一月', u'腊月')
 g_days = (u'初一', u'初二', u'初三', u'初四', u'初五', u'初六', u'初七', u'初八', u'初九', u'初十', u'十一', u'十二', u'十三', u'十四', u'十五', u'十六', u'十七', u'十八', u'十九', u'二十', u'廿一', u'廿二', u'廿三', u'廿四', u'廿五', u'廿六', u'廿七', u'廿八', u'廿九', u'三十')
 
 g_lunar_month_days = [
@@ -53,34 +53,24 @@ def lunar_year_days(year):
         days += day
     return days
 
-g_term_infos = (0, 21208, 42467, 63836, 85337, 107014, 128867, 150921, 173149, 195551, 218072, 240693, 263343, 285989, 308563, 331033, 353350, 375494, 397447, 419210, 440795, 462224, 483532, 504758)
-g_terms = (u'立春', u'雨水', u'惊蛰', u'春分', u'清明', u'谷雨', u'立夏', u'小满', u'芒种', u'夏至', u'小暑', u'大暑', u'立秋', u'处暑', u'白露', u'秋分', u'寒露', u'霜降', u'立冬', u'小雪', u'大雪', u'冬至', u'小寒', u'大寒')
-
-def get_terms(solar_year):
-    '''
-
-//=====   某年的第n个节气为几日(从0小寒起算) 
-function   sTerm(y,n)   { 
-var   offDate   =   new   Date( 
-  (   31556925974.7*(y-1900)   +   sTermInfo[n]*60000   )   +   Date.UTC(1900,0,6,2,5)   
-); 
-return(offDate.getUTCDate()); 
-} 
-    '''
-    L = []
-    for n in range(24):
-        d = 31556925974.7 * (solar_year - 1900) + g_term_infos[n] * 60000 - 2208549300000
-        L.append((g_terms[n], d))
-    print L
-    return L
-
 def get_lunar_date_name(lunar_date):
+    '''
+    Return name of lunar date.
+
+    >>> get_lunar_date_name((2013, 2, 24, False))
+    (u'\u7532\u5348', u'\u4e8c\u6708', u'\u5eff\u56db')
+    '''
     year, month, day, leap = lunar_date
     return name_of_year(year), name_of_month(month, leap), name_of_day(day)
 
 def get_lunar_date(t=None):
     '''
     Return lunar date as (year, month, day, isLeap).
+
+    >>> get_lunar_date(datetime(2013, 4, 4))
+    (2013, 2, 24, False)
+    >>> get_lunar_date(datetime(2013, 4, 11))
+    (2013, 3, 2, False)
     '''
     tm = t if t else datetime.now()
     if (tm < SOLAR_START_DATE or tm > SOLAR_END_DATE):
@@ -116,6 +106,8 @@ def name_of_month(month, leap):
     return g_months[month-1]
 
 def name_of_day(day):
+    '''
+    '''
     return g_days[day-1]
 
 def name_of_year(year):
@@ -123,12 +115,91 @@ def name_of_year(year):
         raise Exception('out of range')
     return u'%s%s' % (g_tiangan[(year - 3) % 10], g_dizhi[(year - 3) % 12])
 
-if __name__ == '__main__':
-    import unittest
-    print 'today:', get_lunar_date(), get_lunar_date_name(get_lunar_date())
-    get_terms(2012)
-    #print 'terms:', get_terms(2011), get_terms(2012), get_terms(2014), get_terms(2015)
+_JIEQI = {
+    20130204: u'立春',
+    20130218: u'雨水',
+    20130305: u'惊蛰',
+    20130320: u'春分',
+    20130404: u'清明',
+    20130420: u'谷雨',
+    20130505: u'立夏',
+    20130521: u'小满',
+    20130605: u'芒种',
+    20130621: u'夏至',
+    20130707: u'小暑',
+    20130722: u'大暑',
+    20130807: u'立秋',
+    20130823: u'处暑',
+    20130907: u'白露',
+    20130923: u'秋分',
+    20131008: u'寒露',
+    20131023: u'霜降',
+    20131107: u'立冬',
+    20131122: u'小雪',
+    20131207: u'大雪',
+    20131222: u'冬至',
+    20140105: u'小寒',
+    20140120: u'大寒',
 
+    20140204: u'立春',
+    20140219: u'雨水',
+    20140306: u'惊蛰',
+    20140321: u'春分',
+    20140405: u'清明',
+    20140420: u'谷雨',
+    20140505: u'立夏',
+    20140521: u'小满',
+    20140606: u'芒种',
+    20140621: u'夏至',
+    20140707: u'小暑',
+    20140723: u'大暑',
+    20140807: u'立秋',
+    20140823: u'处暑',
+    20140908: u'白露',
+    20140923: u'秋分',
+    20141008: u'寒露',
+    20141023: u'霜降',
+    20141107: u'立冬',
+    20141122: u'小雪',
+    20141207: u'大雪',
+    20141222: u'冬至',
+    20150105: u'小寒',
+    20150120: u'大寒',
+
+    20150204: u'立春',
+    20150219: u'雨水',
+    20150306: u'惊蛰',
+    20150321: u'春分',
+    20150405: u'清明',
+    20150420: u'谷雨',
+    20150506: u'立夏',
+    20150521: u'小满',
+    20150606: u'芒种',
+    20150622: u'夏至',
+    20150707: u'小暑',
+    20150723: u'大暑',
+    20150808: u'立秋',
+    20150823: u'处暑',
+    20150908: u'白露',
+    20150923: u'秋分',
+    20151008: u'寒露',
+    20151024: u'霜降',
+    20151108: u'立冬',
+    20151122: u'小雪',
+    20151207: u'大雪',
+    20151222: u'冬至',
+    20160106: u'小寒',
+    20160120: u'大寒',
+}
+
+def get_jieqi(y, m, d):
+    return _JIEQI.get(10000 * y + 100 * m + d)
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
+
+    import unittest
     class Test(unittest.TestCase):
         def test_get_lunar_date_out_of_range(self):
             self.assertRaises(Exception, get_lunar_date, datetime(1898,12,25))
