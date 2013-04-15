@@ -1,0 +1,95 @@
+{% include 'templates/_header.html' %}
+<script type="text/javascript">
+$(function() {
+    $('#search .condition-form span[v={{ form }}]').addClass('selected');
+    $('#search .condition-dynasty span[v={{ dynasty_id }}]').addClass('selected');
+    $('#search .condition-poet span[v={{ poet_id }}]').addClass('selected');
+});
+
+var g_search_url = '{{ search_url }}';
+
+$(function() {
+    var searching_text = $('#more').text();
+    var normal_text = '显示更多搜索结果';
+    $('#more').click(function() {
+        var next = $('#more').attr('next');
+        $('#more').attr('disabled', 'disabled').text(searching_text).addClass('loading');
+        $.getJSON(g_search_url + '&next=' + next)
+         .done(function(result) {
+            if (next=="" && result.total==0) {
+                $('#more').hide();
+                $('#empty-result').show();
+            }
+            else {
+                if (result.next) {
+                    $('#more').attr('next', next);
+                    $('#more').text(normal_text);
+                }
+                else {
+                    $('#more').hide();
+                }
+                var boxes = $(make_poem_boxes(result.poems));
+                $('#poems').append(boxes).masonry('appended', boxes);
+            }
+        }).fail(function() {
+            $('#more').text('网络好像出问题了，点击重试一次');
+        }).always(function() {
+            $('#more').removeAttr('disabled').removeClass('loading');
+        });
+    });
+    $('#more').trigger('click');
+});
+</script>
+
+    <div class="container">
+        <div class="row">
+            <div class="frame">
+                <div class="frame-inner">
+                    <form id="search" name="search" action="#" method="get">
+                        <div>
+                            在六万余首诗词中搜索：<input name="q" type="text" maxlength="15" class="search" placeholder="请输入关键词" value="{{ q|e }}" /> <button class="btn search">搜索</button>
+                        </div>
+{% if poet %}
+                        <div class="condition condition-poet">诗人：<span v="">所有</span> <span v="{{ poet.id }}" class="poet">{{ poet.name }}</span></div>
+{% else %}
+                        <div class="condition condition-dynasty">朝代：<span v="">所有</span>
+                {% for d in dynasties %}
+                        <span v="{{ d.id }}">{{ d.name }}</span>
+                {% endfor %}
+                        </div>
+{% endif %}
+                        <div class="condition condition-form">格式：<span v="">不限</span> <span v="58">五律</span> <span v="54">五绝</span> <span v="78">七律</span> <span v="74">七绝</span> <span v="9">词</span> <span v="8">曲</span> <span v="15">赋</span></div>
+                    </form>
+                    <div id="empty-result" style="display:none">
+                        <div class="line"></div>
+                        <p class="empty" style="font-size:18px;line-height:32px;">很抱歉，没有找到符合条件的诗词。</p>
+                        <p class="empty">您可以尝试：</p>
+                        <p class="empty">是否输错了关键词？例如，把“日照香炉生紫烟”写成“日照香炉升紫烟”，您不必输入整句，搜索“日照香炉”即可。</p>
+                        <p class="empty">按朝代、诗人、格式筛选诗词时，选择“所有”来扩大搜索范围。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div id="poems">
+{% for p in poems %}
+                <div class="item">
+                    <div class="item-header"></div>
+                    <div class="item-body">
+                        <p><a href="/poem/{{ p.id }}">{{ p.name }}</a></p>
+                        <p><a href="/dynasty/{{ p.dynasty_id }}">{{ p.dynasty_name }}</a> - <a href="/poet/{{ p.poet_id }}">{{ p.poet_name }}</a></p>
+                        <p>{{ p.content }}</p>
+                    </div>
+                    <div class="item-footer"></div>
+                </div>
+{% endfor %}
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="more">
+                <button id="more" disabled="disabled" next="" class="btn loading">正在搜索诗词，请稍候……</button>
+            </div>
+        </div>
+    </div>
+{% include 'templates/_footer.html' %}
