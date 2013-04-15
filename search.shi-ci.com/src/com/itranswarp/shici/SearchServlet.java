@@ -53,7 +53,7 @@ public class SearchServlet extends HttpServlet {
 	Timer timer = null;
 
 	class ScanTask extends TimerTask {
-		static final String LAST_INDEX_POINT = "/srv/search.shi-ci.db/lucene_search_from";
+		static final String LAST_INDEX_POINT = "/srv/search.shi-ci.com/lucene_search_from";
 
 		public ScanTask() {
 			try {
@@ -187,7 +187,7 @@ public class SearchServlet extends HttpServlet {
 
 	public void init() throws ServletException {
 		log.info("Init SearchServlet...");
-		searcher = new PoemSearcher("/srv/search.shi-ci.db/lucene/search_db/");
+		searcher = new PoemSearcher("/srv/search.shi-ci.com/search_db/");
 		timer = new Timer();
 		timer.schedule(new ScanTask(), TIMER_PERIOD, TIMER_PERIOD);
 	}
@@ -235,6 +235,10 @@ public class SearchServlet extends HttpServlet {
 		}
 	}
 
+	boolean isEmpty(String s) {
+		return s!=null && !"".equals(s);
+	}
+
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		try {
     		String q = getRequiredParam(req, "q");
@@ -243,11 +247,20 @@ public class SearchServlet extends HttpServlet {
     			throw new SearchException("QUERY_STRING_TOO_LONG", "Keywords too long.");
     		String next = req.getParameter("next");
     		String dynasty_id = req.getParameter("dynasty_id");
+    		String poet_id = req.getParameter("poet_id");
     		String form = req.getParameter("form");
     		String category = req.getParameter("category");
     		Map<String, String> filter = new HashMap<String, String>();
-    		if (DYNASTY_SET.contains(dynasty_id))
-    			filter.put("dynasty_id", dynasty_id);
+    		if (isEmpty(dynasty_id)) {
+    			if ( ! isEmpty(poet_id)) {
+    				filter.put("poet_id", poet_id);
+    			}
+    		}
+    		else {
+        		if (DYNASTY_SET.contains(dynasty_id)) {
+        			filter.put("dynasty_id", dynasty_id);
+    	    	}
+    		}
     		if (FORM_SET.contains(form))
     			filter.put("form", form);
     		if (CATEGORY_SET.contains(category))
