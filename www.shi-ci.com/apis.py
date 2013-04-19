@@ -116,7 +116,7 @@ def featured_poems():
         s.add(random.randint(0, total-1))
     for n in s:
         L.extend(db.select('select * from poem where ilike<100 order by id limit ?,?', n, 1))
-    return L
+    return dict(poems=L)
 
 @get('/')
 @template('index.html')
